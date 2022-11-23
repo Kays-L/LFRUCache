@@ -52,31 +52,30 @@ class ConsistentHashing {
         }
     }
 
-    static idManager = class {
+    static idManager = class { // useful for finding which index in this.nodes a node is in constant time. maps nodeId to index in this.nodes. other methods update properly all in constant time
         constructor() {
-            this.idToIndexMap = {};
+            this.#idToIndexMap = {};
         }
 
-        addId(id, nodes) {
-
+        addId(nodes) {
+            this.#idToIndexMap[nodes.length] = nodes.length;
         }
 
         removeId(rid, r, nodes) { // s => stay, r => remove
+            const hid = nodes.length - 1;
             if (rid !== nodes.length - 1) { // want to maintain contiguous chunk of actively used ids–just a cool feature. We don't want to remove id 9 to then have ids 1, 2, 3, ... ,8, 10, ... We don't want holes. 
-                const hid = nodes.length - 1;
                 const s = this.idToIndexMap[hid];
                 this.idToIndexMap[hid] = r; // make highest id point to remove node. not useful because we're getting rid of it, but nice for demo purposes
                 this.idToIndexMap[rid] = s; // make middle id point to stay node
                 nodes[r].id = hid;
                 nodes[s].id = rid;
             }
-            this.idToIndexMap.pop(); // remove the high id
+            delete this.idToIndexMap[hid]; // remove the high id
         }
     }
 
     constructor(numNodes, keyRange) {
         this.keyRange = keyRange;
-        this.idManager.idToIndexMap = []; // useful for finding which index in this.nodes a node is in constant time. maps nodeId to index in this.nodes. other methods update properly all in constant time
         this.nodes = new Array(numNodes).fill(null).map(() => (new this.Node()));
         for (let i = 0; i < numNodes; ++i) {
             this.nodes[i].id = i;
@@ -126,16 +125,7 @@ class ConsistentHashing {
         }
         const move = this.nodes.pop();
         this.nodes[i] = move;
-        this.idManager.idToIndexMap[move.id] = i;
         return remove;
-    }
-
-    #deepcopyKeys(keys) {
-        const newkeys = {};
-        for (const key in keys) {
-            newkeys[key] = true;
-        }
-        return newkeys;
     }
     
     removeNode(id) {
@@ -149,12 +139,12 @@ class ConsistentHashing {
     
     addNode() {
         const newnode = new this.Node(this.nodes.length);
-        this.idManager.idToIndexMap[this.nodes.length] = this.nodes.length;
+        this.idManager.addNode(nodes.length);
+        this.nodes.push(newnode);
         for (let i = 0; i < Math.floor(this.numRanges / (this.nodes.length + 1)); ++i) {
             const node = this.#randomNode();
             this.#transferRange(node, newnode);
         }
-        this.nodes.push(newnode);
     }
     
     /*   getKeysInNode(id) {
