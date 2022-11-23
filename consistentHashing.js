@@ -102,13 +102,10 @@ class ConsistentHashing {
     }
 
     #transferRange(source, dest) {
-        dest.ranges.push(source.ranges.splice(Math.floor(Math.random() * source.ranges.length))[0]);
-    }
-
-    getNodeForKey(key) {
-        const id = this.rangeToNodeMap.getNode(key);
-        if (id === -1) return -1
-        return this.nodes[this.idManager.idToIndexMap[id]];
+        const rangeIndex = Math.floor(Math.random() * source.ranges.length);
+        const range = source.ranges.splice(rangeIndex, 1)[0];
+        dest.ranges.push(range);
+        this.rangeToNodeMap.reassignRange(range.lo, range.hi, dest.id);
     }
 
     getValueForKey(key) {
@@ -147,24 +144,5 @@ class ConsistentHashing {
             const node = this.#randomNode();
             this.#transferRange(node, newnode);
         }
-    }
-
-    getAllKeys() {
-        const keys = [];
-        for (const node of this.nodes) {
-            keys.push(...Object.keys(node.keyToValMap));
-        }
-        return keys;
-    }
-    
-    getKeysInNode(id) {
-        const node = this.nodes[this.idManager.idToIndexMap[id]];
-        const results = [];
-        for (const {lo, hi, keys} of node.ranges) {
-            for (const key in keys) {
-                results.push(key);
-            }
-        }
-        return results;
     }
 }
