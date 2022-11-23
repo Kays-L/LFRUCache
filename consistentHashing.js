@@ -42,7 +42,6 @@ class ConsistentHashing {
                     hip = mid - 1;
                 }
             }
-            return -1;
         }
     }
 
