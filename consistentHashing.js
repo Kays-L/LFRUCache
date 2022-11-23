@@ -52,7 +52,7 @@ class ConsistentHashing {
         }
     }
 
-    static idManager = class { // useful for finding which index in this.nodes a node is in constant time. maps nodeId to index in this.nodes. other methods update properly all in constant time
+    static IDManager = class { // useful for finding which index in this.nodes a node is in constant time. maps nodeId to index in this.nodes. other methods update properly all in constant time
         constructor() {
             this.#idToIndexMap = {};
         }
@@ -76,6 +76,8 @@ class ConsistentHashing {
 
     constructor(numNodes, keyRange) {
         this.keyRange = keyRange;
+        this.rangeToNodeMap = new this.RangeToNodeMap();
+        this.idManager = new this.IDManager();
         this.nodes = new Array(numNodes).fill(null).map(() => (new this.Node()));
         for (let i = 0; i < numNodes; ++i) {
             this.nodes[i].id = i;
@@ -89,8 +91,8 @@ class ConsistentHashing {
             last = Math.min(this.keyRange, first + Math.floor(Math.random() * (this.keyRange / (numNodes * numNodes * Math.random())))); // create ranges [first, last] of random size
             node.ranges.push({lo: first, hi: last, keys: {}});
             first = last + 1;
-            this.RangeToNodeMap.ranges.push([lo, hi]);
-            this.RangeToNodeMap.nodes.push(node.id);
+            this.rangeToNodeMap.ranges.push([lo, hi]);
+            this.rangeToNodeMap.nodes.push(node.id);
             ++this.numRanges;
         }
     }
@@ -104,13 +106,13 @@ class ConsistentHashing {
     }
 
     getNodeForKey(key) {
-        const id = this.RangeToNodeMap.getNode(key);
+        const id = this.rangeToNodeMap.getNode(key);
         if (id === -1) return -1
         return this.nodes[this.idManager.idToIndexMap[id]];
     }
 
     getValueForKey(key) {
-        const id = this.RangeToNodeMap.getNode(key);
+        const id = this.rangeToNodeMap.getNode(key);
         if (id === -1) return -1
         const data = this.nodes[this.idManager.idToIndexMap[id]].keyToValueMap(key);
         return !data ? -1 : data;
@@ -146,8 +148,16 @@ class ConsistentHashing {
             this.#transferRange(node, newnode);
         }
     }
+
+    getAllKeys() {
+        const keys = [];
+        for (const node of this.nodes) {
+            keys.push(...Object.keys(node.keyToValMap));
+        }
+        return keys;
+    }
     
-    /*   getKeysInNode(id) {
+    getKeysInNode(id) {
         const node = this.nodes[this.idManager.idToIndexMap[id]];
         const results = [];
         for (const {lo, hi, keys} of node.ranges) {
@@ -156,5 +166,5 @@ class ConsistentHashing {
             }
         }
         return results;
-    } */
+    }
 }
